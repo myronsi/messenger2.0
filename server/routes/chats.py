@@ -43,14 +43,14 @@ def list_chats(username: str):
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Get user IDs
+    # Получаем ID пользователя
     cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
     user_id = cursor.fetchone()
 
     if not user_id:
-        raise HTTPException(status_code=404, detail="User not found")
-        
-    # Get a list of chats
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    # Получаем список чатов
     cursor.execute("""
         SELECT id, name FROM chats
         WHERE user1_id = ? OR user2_id = ?
@@ -68,3 +68,24 @@ def send_message(message: MessageSend):
     # Get the sender ID
     cursor.execute("SELECT id FROM users WHERE username = ?", (message.sender,))
     sender_id
+
+@router.delete("/chats/delete/{chat_id}")
+def delete_chat(chat_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Проверяем, существует ли чат
+    cursor.execute("SELECT * FROM chats WHERE id = ?", (chat_id,))
+    chat = cursor.fetchone()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Чат не найден")
+
+    # Удаляем сообщения, связанные с чатом
+    cursor.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
+
+    # Удаляем сам чат
+    cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+    conn.commit()
+    conn.close()
+
+    return {"message": "Чат удалён"}    

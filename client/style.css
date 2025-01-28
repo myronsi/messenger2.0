@@ -140,3 +140,7 @@ button:hover {
 #logout-btn:hover {
     background-color: #c82333;
 }
+
+#delete-button  {
+    background-color: #dc3545;
+}
