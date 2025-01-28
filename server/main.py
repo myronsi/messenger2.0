@@ -6,10 +6,10 @@ from server.websocket import router as websocket_router
 app = FastAPI()
 
 # Connecting routes
-app.include_router(auth.router, prefix="/auth")
-app.include_router(messages.router, prefix="/messages")
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(messages.router, prefix="/messages", tags=["messages"])
 app.include_router(websocket_router, prefix="")
-app.include_router(chats.router, prefix="/chats")
+app.include_router(chats.router, prefix="/chats", tags=["chats"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow access from any domains

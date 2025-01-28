@@ -90,7 +90,18 @@ async function initChats(username) {
             const chatItem = document.createElement("div");
             chatItem.className = "chat-item";
             chatItem.textContent = chat.name;
+
+            // Кнопка удаления чата
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Удалить";
+            deleteBtn.style.marginLeft = "10px";
+            deleteBtn.onclick = (event) => {
+                event.stopPropagation(); // Чтобы клик по кнопке не открывал чат
+                deleteChat(chat.id, username);
+            };
+
             chatItem.onclick = () => openChat(chat.id, chat.name, username);
+            chatItem.appendChild(deleteBtn); // Добавляем кнопку удаления
             chatsList.appendChild(chatItem);
         });
     } else {
@@ -234,7 +245,7 @@ async function openChat(chatId, chatName, username) {
         document.getElementById("chats-section").style.display = "block"; // Показываем список чатов
         currentChatId = null; // Сбрасываем текущий chatId
         ws.close();
-    }; 
+    };
 }
 
 // Редактирование сообщения
@@ -276,5 +287,32 @@ async function deleteMessage(messageId, messageElement) {
     } else {
         const error = await response.json();
         alert("Ошибка: " + error.detail);
+    }
+}
+
+// Удаление чата
+async function deleteChat(chatId, username) {
+    console.log(`Удаляем чат с ID: ${chatId}`);
+    console.log(`URL запроса: ${BASE_URL}/chats/chats/delete/${chatId}`);
+
+    const confirmDelete = confirm("Вы уверены, что хотите удалить этот чат?");
+    if (!confirmDelete) return;
+
+    try {
+        const response = await fetch(`${BASE_URL}/chats/chats/delete/${chatId}`, {
+            method: "DELETE",
+        });
+
+        if (response.ok) {
+            alert("Чат успешно удалён!");
+            initChats(username); // Обновляем список чатов
+        } else {
+            const error = await response.json();
+            console.error("Ошибка удаления:", error);
+            alert(`Ошибка: ${error.detail}`);
+        }
+    } catch (err) {
+        console.error("Ошибка сети:", err);
+        alert("Ошибка сети. Проверьте подключение к серверу.");
     }
 }
