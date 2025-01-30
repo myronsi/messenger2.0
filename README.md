@@ -71,6 +71,9 @@ or<br>
 ### Change directory
 `cd messenger2.0`
 
+### Change your app.js file
+
+at first line change `const BASE_URL = "http://ip:8000";` to yours ip addres
 
 ### Launch python virtual environment
 `python -m venv .`
