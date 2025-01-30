@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "http://ip:8000";
 let currentChatId = null;
 
 // Проверка авторизации при загрузке страницы
@@ -206,7 +206,7 @@ async function openChat(chatId, chatName, username) {
     });
 
     // WebSocket для получения новых сообщений
-    ws = new WebSocket(`ws://127.0.0.1:8000/ws/${username}`);
+    ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/${username}`);
     ws.onopen = () => console.log("WebSocket подключён");
     ws.onmessage = (event) => {
         const msgDiv = document.createElement("div");
