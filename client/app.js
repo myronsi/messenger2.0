@@ -1,19 +1,27 @@
 const BASE_URL = "http://ip:8000";
 let currentChatId = null;
 
-// Проверка авторизации при загрузке страницы
-window.onload = () => {
-    const savedUsername = localStorage.getItem("username");
-
-    if (savedUsername) {
-        console.log("Пользователь уже авторизован:", savedUsername);
-        initChats(savedUsername);
+window.onload = async () => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+        try {
+            const response = await fetch(`${BASE_URL}/auth/me`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                const user = await response.json();
+                console.log("Пользователь авторизован:", user.username);
+                initChats(user.username);
+            } else {
+                console.log("Токен недействителен, требуется повторный вход");
+                localStorage.removeItem("access_token");
+            }
+        } catch (err) {
+            console.error("Ошибка при проверке токена:", err);
+        }
     } else {
         console.log("Требуется авторизация");
         document.getElementById("login-section").style.display = "block";
-        document.getElementById("register-section").style.display = "block";
-        document.getElementById("chats-section").style.display = "none";
-        document.getElementById("chat-section").style.display = "none";
     }
 };
 
@@ -32,7 +40,7 @@ document.getElementById("register-btn").onclick = async () => {
 };
 
 // Авторизация
-document.getElementById("login-btn").onclick = async () => {
+async function login() {
     const username = document.getElementById("login-username").value;
     const password = document.getElementById("login-password").value;
     const response = await fetch(`${BASE_URL}/auth/login`, {
@@ -40,20 +48,26 @@ document.getElementById("login-btn").onclick = async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
     });
-
     const message = await response.json();
     if (response.ok) {
-        document.getElementById("login-message").textContent = "Успешный вход!";
-        localStorage.setItem("username", username); // Сохраняем пользователя
+        localStorage.setItem("access_token", message.access_token);
         initChats(username);
     } else {
         document.getElementById("login-message").textContent = message.detail;
     }
+}
+
+document.getElementById("login-btn").onclick = login;
+
+document.getElementById("logout-btn").onclick = () => {
+    localStorage.removeItem("access_token");
+    document.getElementById("login-section").style.display = "block";
+    document.getElementById("chats-section").style.display = "none";
 };
 
 // Логаут
 document.getElementById("logout-btn").onclick = () => {
-    localStorage.removeItem("username"); // Удаляем данные пользователя
+    localStorage.removeItem("access_token"); // Удаляем данные пользователя
     document.getElementById("login-section").style.display = "block"; // Показываем экран логина
     document.getElementById("register-section").style.display = "block";
     document.getElementById("chats-section").style.display = "none";
