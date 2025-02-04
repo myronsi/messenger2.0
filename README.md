@@ -112,4 +112,4 @@ messenger/<br>
 │   ⠀⠀⠀⠀⠀⠀├── chats.py           # Chat-related routes<br>
 │   ⠀⠀⠀⠀⠀⠀└── messages.py        # Message-related routes<br>
 ├── LICENSE                 # License file<br>
-└── README.md               # Project documentation<br>
+└── README.md               # Project documentation
