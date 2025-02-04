@@ -1,4 +1,4 @@
-const BASE_URL = "http://192.168.178.29:8000";
+const BASE_URL = "http://ip:8000";
 let currentChatId = null;
 
 window.onload = async () => {
