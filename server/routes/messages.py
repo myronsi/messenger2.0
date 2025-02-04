@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from server.database import get_connection
 
@@ -38,35 +38,6 @@ def send_message(message: Message):
     conn.commit()
     conn.close()
     return {"message": "Message sent"}
-
-# Getting message history
-@router.get("/history/{user1}/{user2}")
-def get_message_history(user1: str, user2: str):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    # Get user IDs
-    cursor.execute("SELECT id FROM users WHERE username = ?", (user1,))
-    user1_id = cursor.fetchone()
-    cursor.execute("SELECT id FROM users WHERE username = ?", (user2,))
-    user2_id = cursor.fetchone()
-
-    if not user1_id or not user2_id:
-        raise HTTPException(status_code=404, detail="One of the users was not found")
-
-    # Get message history
-        cursor.execute("""
-        SELECT content, timestamp,
-               CASE WHEN sender_id = ? THEN 'sent' ELSE 'received' END as direction
-        FROM messages
-        WHERE (sender_id = ? AND receiver_id = ?)
-           OR (sender_id = ? AND receiver_id = ?)
-        ORDER BY timestamp ASC
-    """, (user1_id["id"], user1_id["id"], user2_id["id"], user2_id["id"], user1_id["id"]))
-
-    messages = cursor.fetchall()
-    conn.close()
-    return {"history": [{"content": msg["content"], "timestamp": msg["timestamp"], "direction": msg["direction"]} for msg in messages]}
 
 @router.get("/list/{username}")
 def list_chats(username: str):
@@ -118,30 +89,36 @@ def get_message_history(chat_id: int):
     }
 
 @router.put("/edit/{message_id}")
-def edit_message(message_id: int, payload: dict):
-    content = payload.get("content")
+def edit_message(message_id: int, payload: MessageEdit):
+    content = payload.content.strip()
     if not content:
         raise HTTPException(status_code=400, detail="Message text is required")
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Check if the message exists
-    cursor.execute("SELECT * FROM messages WHERE id = ?", (message_id,))
-    message = cursor.fetchone()  # Returns None if message not found
-    if not message:
-        raise HTTPException(status_code=404, detail="Message not found")
+    try:
+        # Проверяем, существует ли сообщение
+        cursor.execute("SELECT id FROM messages WHERE id = ?", (message_id,))
+        message = cursor.fetchone()
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
 
-    # Updating the message
+        # Обновляем сообщение
         cursor.execute("""
-        UPDATE messages
-        SET content = ?, edited_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    """, (content, message_id))
-    conn.commit()
-    conn.close()
+            UPDATE messages
+            SET content = ?, edited_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (content, message_id))
+        conn.commit()
+        return {"message": "Message successfully updated"}
 
-    return {"message": "Message successfully updated"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+    finally:
+        conn.close()
 
 @router.delete("/delete/{message_id}")
 def delete_message(message_id: int):

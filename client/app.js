@@ -1,4 +1,4 @@
-const BASE_URL = "http://ip:8000";
+const BASE_URL = "http://192.168.178.29:8000";
 let currentChatId = null;
 
 window.onload = async () => {
@@ -84,24 +84,13 @@ async function initChats(username) {
     const { chats } = await response.json();
 
     const chatsList = document.getElementById("chats-list");
-    chatsList.innerHTML = ""; // Очистка списка
+    chatsList.innerHTML = "";
     if (Array.isArray(chats)) {
         chats.forEach(chat => {
             const chatItem = document.createElement("div");
             chatItem.className = "chat-item";
             chatItem.textContent = chat.name;
-
-            // Кнопка удаления чата
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Удалить";
-            deleteBtn.style.marginLeft = "10px";
-            deleteBtn.onclick = (event) => {
-                event.stopPropagation(); // Чтобы клик по кнопке не открывал чат
-                deleteChat(chat.id, username);
-            };
-
             chatItem.onclick = () => openChat(chat.id, chat.name, username);
-            chatItem.appendChild(deleteBtn); // Добавляем кнопку удаления
             chatsList.appendChild(chatItem);
         });
     } else {
@@ -191,17 +180,38 @@ async function openChat(chatId, chatName, username) {
         menu.classList.add("hidden");
     };
 
-    // Логика для отображения чата
-    document.getElementById("back-to-chats-btn").onclick = () => {
-        document.getElementById("chat-section").style.display = "none"; // Скрываем чат
-        document.getElementById("chats-section").style.display = "block"; // Показываем список чатов
-        currentChatId = null; // Сбрасываем текущий chatId
-    };
-
+    document.getElementById("logout-btn").style.display = "none";
     document.getElementById("chats-section").style.display = "none";
     document.getElementById("chat-section").style.display = "block";
     document.getElementById("chat-name").textContent = chatName;
     currentChatId = chatId;
+
+    // Кнопка удаления чата
+    document.getElementById("delete-chat-btn").onclick = async () => {
+        const confirmDelete = confirm("Вы уверены, что хотите удалить этот чат?");
+        if (!confirmDelete) return;
+
+        try {
+            const response = await fetch(`${BASE_URL}/chats/delete/${chatId}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`
+                }
+            });
+
+            if (response.ok) {
+                alert("Чат успешно удалён!");
+                document.getElementById("chat-section").style.display = "none";
+                document.getElementById("chats-section").style.display = "block";
+                initChats(username); // Обновляем список чатов
+            } else {
+                const error = await response.json();
+                alert(`Ошибка: ${error.detail}`);
+            }
+        } catch (err) {
+            alert("Ошибка сети. Проверьте подключение к серверу.");
+        }
+    };
 
     const response = await fetch(`${BASE_URL}/messages/history/${chatId}`);
     const { history } = await response.json();
@@ -241,6 +251,7 @@ async function openChat(chatId, chatName, username) {
         messageInput.value = "";
     };
     document.getElementById("back-to-chats-btn").onclick = () => {
+        document.getElementById("logout-btn").style.display = "block";
         document.getElementById("chat-section").style.display = "none"; // Скрываем чат
         document.getElementById("chats-section").style.display = "block"; // Показываем список чатов
         currentChatId = null; // Сбрасываем текущий chatId
@@ -287,32 +298,5 @@ async function deleteMessage(messageId, messageElement) {
     } else {
         const error = await response.json();
         alert("Ошибка: " + error.detail);
-    }
-}
-
-// Удаление чата
-async function deleteChat(chatId, username) {
-    console.log(`Удаляем чат с ID: ${chatId}`);
-    console.log(`URL запроса: ${BASE_URL}/chats/chats/delete/${chatId}`);
-
-    const confirmDelete = confirm("Вы уверены, что хотите удалить этот чат?");
-    if (!confirmDelete) return;
-
-    try {
-        const response = await fetch(`${BASE_URL}/chats/chats/delete/${chatId}`, {
-            method: "DELETE",
-        });
-
-        if (response.ok) {
-            alert("Чат успешно удалён!");
-            initChats(username); // Обновляем список чатов
-        } else {
-            const error = await response.json();
-            console.error("Ошибка удаления:", error);
-            alert(`Ошибка: ${error.detail}`);
-        }
-    } catch (err) {
-        console.error("Ошибка сети:", err);
-        alert("Ошибка сети. Проверьте подключение к серверу.");
     }
 }

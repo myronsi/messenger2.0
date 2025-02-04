@@ -69,7 +69,7 @@ def send_message(message: MessageSend):
     cursor.execute("SELECT id FROM users WHERE username = ?", (message.sender,))
     sender_id
 
-@router.delete("/chats/delete/{chat_id}")
+@router.delete("/delete/{chat_id}")
 def delete_chat(chat_id: int):
     conn = get_connection()
     cursor = conn.cursor()

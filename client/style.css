@@ -144,3 +144,11 @@ button:hover {
 #delete-button  {
     background-color: #dc3545;
 }
+
+#delete-chat-btn    {
+    background-color: #dc3545;
+}
+
+#delete-chat-btn:hover  {
+    background-color: #c82333;
+}
